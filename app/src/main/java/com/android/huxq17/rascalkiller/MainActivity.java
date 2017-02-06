@@ -1,24 +1,20 @@
 package com.android.huxq17.rascalkiller;
 
-import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
@@ -31,12 +27,9 @@ import com.android.huxq17.rascalkiller.utils.Utils;
 import com.andview.refreshview.XRefreshView;
 import com.andview.refreshview.utils.LogUtils;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
-import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static android.view.View.VISIBLE;
 
 public class MainActivity extends BaseActivity implements ActionMode.Callback {
     private RecyclerView recyclerView;
@@ -124,7 +117,11 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
         adapter.setOnClickListener(new AppListAdapter.OnClickListener() {
             @Override
             public void onClick(View v, String packageName) {
-
+                if (adapter.getSelectedApp().size() > 0) {
+                    showMenu(true);
+                } else {
+                    showMenu(false);
+                }
             }
         });
         recyclerView.setAdapter(adapter);
@@ -138,7 +135,7 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
 //        configFloatingButton();
     }
 
-    private void killApp(String packageName) {
+    private void stopApp(String packageName) {
         Utils.killProcess(MainActivity.this, packageName, new LoadListenerImpl(MainActivity.this, "清理中...") {
             @Override
             public void onSuccess(Object result) {
@@ -158,21 +155,41 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
         return true;
     }
 
+    public void showMenu(boolean show) {
+        mToolbar.getMenu().findItem(R.id.action_clear).setVisible(show);
+        mToolbar.getMenu().findItem(R.id.action_start).setVisible(show);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_clear) {
-            clearApp();
+            stopApp();
+            showMenu(false);
+            return true;
+        } else if (item.getItemId() == R.id.action_start) {
+            List<String> packages = adapter.getSelectedApp();
+            if (packages.size() == 0) return super.onOptionsItemSelected(item);
+            String packageName = adapter.getSelectedApp().get(0);
+            if (!TextUtils.isEmpty(packageName)) {
+                Utils.startApp(this, packageName);
+            }
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void clearApp() {
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        showMenu(false);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void stopApp() {
         List<String> selectedApp = adapter.getSelectedApp();
         if (selectedApp.size() > 0) {
             for (String packageName : selectedApp) {
                 adapter.unSelectApp(packageName);
-                killApp(packageName);
+                stopApp(packageName);
             }
         }
     }
@@ -183,26 +200,20 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
         loadData();
     }
 
-    private boolean isTouchFloatingButton(MotionEvent ev) {
-        if (floatingActionButton != null && floatingActionButton.getVisibility() == VISIBLE) {
-            Rect bounds = new Rect();
-            floatingActionButton.getGlobalVisibleRect(bounds);
-            int x = (int) ev.getRawX();
-            int y = (int) ev.getRawY();
-            if (bounds.contains(x, y)) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-        return false;
-    }
-
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         MenuInflater inflater = mode.getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
+        inflater.inflate(R.menu.main_action_menu, menu);
         return true;
+    }
+
+    @Override
+    public void finish() {
+        if (adapter.getSelectedApp().size() == 0) {
+            super.finish();
+        } else {
+            adapter.existActionMode();
+        }
     }
 
     @Override
@@ -213,7 +224,7 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
         if (item.getItemId() == R.id.action_clear) {
-            clearApp();
+            stopApp();
             mode.finish();
             return true;
         }
@@ -238,46 +249,61 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
         }
     }
 
-    private void configFloatingButton() {
-        SubActionButton.Builder rLSubBuilder = new SubActionButton.Builder(this);
-        ImageView rlIcon1 = new ImageView(this);
-        ImageView rlIcon2 = new ImageView(this);
-        ImageView rlIcon3 = new ImageView(this);
-        ImageView rlIcon4 = new ImageView(this);
+//    private boolean isTouchFloatingButton(MotionEvent ev) {
+//        if (floatingActionButton != null && floatingActionButton.getVisibility() == VISIBLE) {
+//            Rect bounds = new Rect();
+//            floatingActionButton.getGlobalVisibleRect(bounds);
+//            int x = (int) ev.getRawX();
+//            int y = (int) ev.getRawY();
+//            if (bounds.contains(x, y)) {
+//                return true;
+//            } else {
+//                return false;
+//            }
+//        }
+//        return false;
+//    }
 
-        rlIcon1.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_chat_light));
-        rlIcon2.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_camera_light));
-        rlIcon3.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_video_light));
-        rlIcon4.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_place_light));
-
-        // Build the main_menu with default options: light theme, 90 degrees, 72dp radius.
-        // Set 4 default SubActionButtons
-        floatingActionMenu = new FloatingActionMenu.Builder(this)
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon1).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon2).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon3).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon4).build())
-                .attachTo(floatingActionButton)
-                .build();
-        floatingActionMenu.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
-            @Override
-            public void onMenuOpened(FloatingActionMenu menu) {
-                // Rotate the icon of rightLowerButton 45 degrees clockwise
-                floatingActionButton.setRotation(0);
-                PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 45);
-                ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(floatingActionButton, pvhR);
-                animation.start();
-            }
-
-            @Override
-            public void onMenuClosed(FloatingActionMenu menu) {
-                floatingActionButton.setRotation(45);
-                PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 0);
-                ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(floatingActionButton, pvhR);
-                animation.start();
-            }
-        });
-    }
+//    private void configFloatingButton() {
+//        SubActionButton.Builder rLSubBuilder = new SubActionButton.Builder(this);
+//        ImageView rlIcon1 = new ImageView(this);
+//        ImageView rlIcon2 = new ImageView(this);
+//        ImageView rlIcon3 = new ImageView(this);
+//        ImageView rlIcon4 = new ImageView(this);
+//
+//        rlIcon1.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_chat_light));
+//        rlIcon2.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_camera_light));
+//        rlIcon3.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_video_light));
+//        rlIcon4.setImageDrawable(getResources().getDrawable(R.mipmap.ic_action_place_light));
+//
+//        // Build the main_menu with default options: light theme, 90 degrees, 72dp radius.
+//        // Set 4 default SubActionButtons
+//        floatingActionMenu = new FloatingActionMenu.Builder(this)
+//                .addSubActionView(rLSubBuilder.setContentView(rlIcon1).build())
+//                .addSubActionView(rLSubBuilder.setContentView(rlIcon2).build())
+//                .addSubActionView(rLSubBuilder.setContentView(rlIcon3).build())
+//                .addSubActionView(rLSubBuilder.setContentView(rlIcon4).build())
+//                .attachTo(floatingActionButton)
+//                .build();
+//        floatingActionMenu.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
+//            @Override
+//            public void onMenuOpened(FloatingActionMenu menu) {
+//                // Rotate the icon of rightLowerButton 45 degrees clockwise
+//                floatingActionButton.setRotation(0);
+//                PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 45);
+//                ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(floatingActionButton, pvhR);
+//                animation.start();
+//            }
+//
+//            @Override
+//            public void onMenuClosed(FloatingActionMenu menu) {
+//                floatingActionButton.setRotation(45);
+//                PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 0);
+//                ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(floatingActionButton, pvhR);
+//                animation.start();
+//            }
+//        });
+//    }
 //    @Override
 //    public boolean dispatchTouchEvent(MotionEvent ev) {
 //        int action = ev.getAction();

@@ -96,6 +96,14 @@ public class Utils {
         return false;
     }
 
+    public static void startApp(Context context, String packageName) {
+        PackageManager packageManager = context.getPackageManager();
+        Intent resolveIntent = packageManager.getLaunchIntentForPackage(packageName);
+        if (resolveIntent.resolveActivity(packageManager) != null) {
+            context.startActivity(resolveIntent);
+        }
+    }
+
     private static ArrayList<AppInfo> getRunningAppsInternal(Context context, List<ActivityManager.RunningAppProcessInfo> apps) {
         ArrayList<AppInfo> applist = new ArrayList<>();
         if (apps != null && apps.size() > 0) {

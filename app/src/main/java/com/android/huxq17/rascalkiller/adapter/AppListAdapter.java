@@ -52,10 +52,6 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
                 }
             });
         }
-//        if (!isSelectMode) {
-//            holder.itemView.setSelected(false);
-//            unSelectApp(appInfo.packageName);
-//        }
         holder.itemView.setSelected(selectedApp.contains(appInfo.packageName));
         if (clickListener != null) {
             holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -97,7 +93,9 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
 
     public void existActionMode() {
         isSelectMode = false;
+        selectedApp.clear();
         notifyDataSetChanged();
+        parent.showMenu(false);
     }
 
     public void selectApp(String packageName) {

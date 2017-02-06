@@ -1,15 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_start"
-        android:icon="@drawable/start_selector"
-        android:orderInCategory="100"
-        android:title="启动选中的应用"
-        app:showAsAction="always" />
-    <item
         android:id="@+id/action_clear"
         android:icon="@drawable/stop_selector"
         android:orderInCategory="100"
-        android:title="停止选中的应用"
+        android:title="清理"
         app:showAsAction="always" />
 </menu>
