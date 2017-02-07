@@ -12,6 +12,7 @@ import com.android.huxq17.rascalkiller.R;
 import com.android.huxq17.rascalkiller.bean.AppInfo;
 import com.andview.refreshview.recyclerview.BaseRecyclerAdapter;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
     private MainActivity parent;
     private List<String> selectedApp = new ArrayList<>();
     private OnClickListener clickListener;
-    private LastSelected lastSelected;
+    private SelectedItem lastSelected;
 
     public AppListAdapter(List<AppInfo> list, MainActivity activity) {
         this.list = list;
@@ -52,7 +53,11 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
                 }
             });
         }
-        holder.itemView.setSelected(selectedApp.contains(appInfo.packageName));
+        boolean isItemSelected = selectedApp.contains(appInfo.packageName);
+        holder.itemView.setSelected(isItemSelected);
+        if (isItemSelected && !isSelectMode && lastSelected != null) {
+            lastSelected.update(holder.itemView, appInfo.packageName);
+        }
         if (clickListener != null) {
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -64,9 +69,14 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
                         if (!isSelectMode) {
                             if (lastSelected != null) {
                                 unSelectApp(lastSelected.packageName);
-                                lastSelected.selectedView.setSelected(false);
+                                View view = lastSelected.getView();
+                                if (view != null) {
+                                    view.setSelected(false);
+                                }
+                                lastSelected.update(v, packageName);
+                            } else {
+                                lastSelected = new SelectedItem(v, packageName);
                             }
-                            lastSelected = new LastSelected(v, packageName);
                         }
                         selectApp(packageName);
                     }
@@ -183,13 +193,33 @@ public class AppListAdapter extends BaseRecyclerAdapter<AppListAdapter.SimpleAda
             return null;
     }
 
-    class LastSelected {
-        public View selectedView;
+    class SelectedItem {
+
+        public WeakReference<View> selectedView;
         public String packageName;
 
-        public LastSelected(View view, String packageName) {
-            this.selectedView = view;
+        public SelectedItem(View view, String packageName) {
+            selectedView = new WeakReference<>(view);
             this.packageName = packageName;
+        }
+
+        public void update(View view, String packageName) {
+            selectedView = new WeakReference<>(view);
+            this.packageName = packageName;
+        }
+
+        public View getView() {
+            if (selectedView != null) {
+                return selectedView.get();
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return "SelectedItem{" +
+                    "packageName='" + packageName + '\'' +
+                    '}';
         }
     }
 }
