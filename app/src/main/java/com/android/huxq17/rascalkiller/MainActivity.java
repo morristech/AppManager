@@ -52,6 +52,8 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
         configView();
         registSreenStatusReceiver();
         Utils.requestSu();
+        Intent intent = new Intent("android.intent.action.BOOT_COMPLETED");
+        getPackageManager().queryBroadcastReceivers(intent, 0);
     }
 
     @Override
@@ -135,14 +137,14 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
 //        configFloatingButton();
     }
 
-    private void stopApp(String packageName) {
-        Utils.killProcess(MainActivity.this, packageName, new LoadListenerImpl(MainActivity.this, "清理中...") {
+    private void stopApp(String... packageName) {
+        Utils.killProcess(MainActivity.this, new LoadListenerImpl(MainActivity.this, "清理中...") {
             @Override
             public void onSuccess(Object result) {
                 super.onSuccess(result);
                 loadData();
             }
-        });
+        }, packageName);
     }
 
     public void startSupportActionMode() {
@@ -187,9 +189,9 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
     private void stopApp() {
         List<String> selectedApp = adapter.getSelectedApp();
         if (selectedApp.size() > 0) {
+            stopApp(selectedApp.toArray(new String[]{}));
             for (String packageName : selectedApp) {
                 adapter.unSelectApp(packageName);
-                stopApp(packageName);
             }
         }
     }
@@ -243,8 +245,7 @@ public class MainActivity extends BaseActivity implements ActionMode.Callback {
             String action = intent.getAction();
             if (Intent.ACTION_SCREEN_ON.equals(action)) {
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-                Utils.killProcess(getApplicationContext(), "com.tencent.mobileqq", null);
-                Utils.killProcess(getApplicationContext(), "com.eg.android.AlipayGphone", null);
+                Utils.killProcess(getApplicationContext(), null, "com.tencent.mobileqq", "com.eg.android.AlipayGphone");
             }
         }
     }

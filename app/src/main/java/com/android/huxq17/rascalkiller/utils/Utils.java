@@ -61,41 +61,6 @@ public class Utils {
         return applist;
     }
 
-    public static boolean hasAppRunning(Context context, String packageName) {
-        if (SystemInfo.apiVersion < Build.VERSION_CODES.LOLLIPOP) {
-            ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-            List<ActivityManager.RunningAppProcessInfo> apps = activityManager.getRunningAppProcesses();
-
-            if (apps != null && apps.size() > 0) {
-                for (ActivityManager.RunningAppProcessInfo taskInfo : apps) {
-                    if (taskInfo != null && context.getPackageName().equals(taskInfo.processName)) {
-                        continue;
-                    }
-                    if (taskInfo != null && taskInfo.processName.equals(packageName)) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-            List<AndroidAppProcess> processInfos = ProcessManager.getRunningAppProcesses();
-            PackageManager pm = context.getPackageManager();
-            for (AndroidAppProcess processInfo : processInfos) {
-                if (context.getPackageName().equals(processInfo.getPackageName())) {
-                    continue;
-                }
-                try {
-                    pm.getApplicationInfo(processInfo.getPackageName(), 0);
-                } catch (PackageManager.NameNotFoundException e) {
-                    continue;
-                }
-                if (packageName.equals(processInfo.getPackageName())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     public static void startApp(Context context, String packageName) {
         PackageManager packageManager = context.getPackageManager();
         Intent resolveIntent = packageManager.getLaunchIntentForPackage(packageName);
@@ -221,6 +186,40 @@ public class Utils {
         }
     }
 
+    public static boolean hasAppRunning(Context context, String packageName) {
+        if (SystemInfo.apiVersion < Build.VERSION_CODES.LOLLIPOP) {
+            ActivityManager activityManager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+            List<ActivityManager.RunningAppProcessInfo> apps = activityManager.getRunningAppProcesses();
+
+            if (apps != null && apps.size() > 0) {
+                for (ActivityManager.RunningAppProcessInfo taskInfo : apps) {
+                    if (taskInfo != null && context.getPackageName().equals(taskInfo.processName)) {
+                        continue;
+                    }
+                    if (taskInfo != null && taskInfo.processName.equals(packageName)) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            List<AndroidAppProcess> processInfos = ProcessManager.getRunningAppProcesses();
+            PackageManager pm = context.getPackageManager();
+            for (AndroidAppProcess processInfo : processInfos) {
+                if (context.getPackageName().equals(processInfo.getPackageName())) {
+                    continue;
+                }
+                try {
+                    pm.getApplicationInfo(processInfo.getPackageName(), 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    continue;
+                }
+                if (packageName.equals(processInfo.getPackageName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 //    public static String getForegroundApp(Context context) {
 //        List<UsageStats> queryUsageStats = getUsageStats(context);
 //        UsageStats recentStats = null;
@@ -353,17 +352,19 @@ public class Utils {
     /**
      * 结束进程,执行操作调用即可
      */
-    public static void killProcess(Context context, String packageName, LoadListenerImpl listener) {
+    public static void killProcess(Context context, LoadListenerImpl listener, String... packageName) {
+        if (packageName == null || packageName.length == 0) return;
         if (listener != null) {
             listener.setDismissTime(0);
         }
         Process process;
         OutputStream out = null;
-        String cmd = "am force-stop " + packageName + " \n";
         try {
             process = Runtime.getRuntime().exec("su");
             out = process.getOutputStream();
-            out.write(cmd.getBytes());
+            for (String name : packageName) {
+                out.write(("am force-stop " + name + " \n").getBytes());
+            }
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();
